@@ -36,7 +36,7 @@ def get_sentences(_path,labelpath,corpuspath,maptype=True):
 
         filepath = os.path.join(_path, filename)
         f1 = open(filepath, 'r')
-        if FLAGMODE:
+        if FLAGMODE:     
             slicelists = f1.read().split("------------------------------")
         else:
             slicelists = f1.read().split("-------------------------")
@@ -46,23 +46,37 @@ def get_sentences(_path,labelpath,corpuspath,maptype=True):
             del slicelists[0]
         if slicelists[-1] == '' or slicelists[-1] == '\n' or slicelists[-1] == '\r\n':
             del slicelists[-1]
-			
+
+
+      
+        filepath = os.path.join(labelpath, filename[:-4]+"_label.pkl")
+        f1 = open(filepath, 'rb')
+        labellists = pickle.load(f1)
+        f1.close()
+
+        if slicelists[0] == '':
+            del slicelists[0]
+        if slicelists[-1] == '' or slicelists[-1] == '\n' or slicelists[-1] == '\r\n':
+            del slicelists[-1]
+
         lastprogram_id = 0
         program_id = 0
         index = -1
-        file_name = 0
         slicefile_corpus = []
         slicefile_labels = []
         slicefile_focus = []
-        slicefile_func = []
         slicefile_filenames = []
+        slicefile_func = []
         focuspointer = None 
         for slicelist in slicelists:
             slice_corpus = []
             focus_index = 0
             flag_focus = 0 
+            #sliceid = 0
             index = index + 1
+
             sentences = slicelist.split('\n')
+
             if sentences[0] == '\r' or sentences[0] == '':
                 del sentences[0]
             if sentences == []:
@@ -71,31 +85,37 @@ def get_sentences(_path,labelpath,corpuspath,maptype=True):
                 del sentences[-1]
             if sentences[-1] == '\r':
                 del sentences[-1]
-            label = int(sentences[-1])
 
             focuspointer = sentences[0].split(" ")[-2:]
+
             sliceid = index
+            #sliceid = sentences[0].split(" ")[0]
+
+            #if sliceid in list_delete:
+                #continue
             file_name = sentences[0]
-            if FLAGMODE:    
-                program_id = sentences[0].split(" ")[1].split('/')[5]+sentences[0].split(" ")[1].split('/')[6]+sentences[0].split(" ")[1].split('/')[7]
+	
+            if FLAGMODE:     
+                program_id = sentences[0].split(" ")[1].split("/")[7]
             else:
                 program_id = sentences[0].split(" ")[1].split("/")[7]
             if lastprogram_id == 0:
                 lastprogram_id = program_id
 
             if not(lastprogram_id == program_id):
+                #print(lastprogram_id)
                 folder_path = os.path.join(corpuspath, str(lastprogram_id))
                 savefilename = folder_path + '/' + filename[:-4] + '.pkl'
-                if lastprogram_id not in os.listdir(corpuspath):
+                if lastprogram_id not in os.listdir(corpuspath):   
                     os.mkdir(folder_path)
-                if savefilename not in os.listdir(folder_path):
-                    f1 = open(savefilename, 'wb')               
+                if savefilename not in os.listdir(folder_path):    
+                    f1 = open(savefilename, 'wb')       
                     pickle.dump([slicefile_corpus,slicefile_labels,slicefile_focus,slicefile_func,slicefile_filenames], f1)
                 else:
-                    f1 = open(savefilename, 'rb')
-                    data = pickle.load(f1)
+                    f1 = open(savefilename, 'rb')           
+                    data = cPickle.load(f1)
                     f1.close()
-                    f1 = open(savefilename, 'wb')
+                    f1 = open(savefilename, 'wb')               
                     pickle.dump([slicefile_corpus+data[0],slicefile_labels+data[1],slicefile_focus+data[2],slicefile_func+data[3],slicefile_filenames+data[4]], f1)
                 f1.close()
                 slicefile_corpus = []
@@ -110,7 +130,7 @@ def get_sentences(_path,labelpath,corpuspath,maptype=True):
             for sentence in sentences:
 
                 if sentence.split(" ")[-1] == focuspointer[1] and flag_focus == 0:
-                    flag_focus = 1
+                    flag_focus = 1 
 
                 sentence = ' '.join(sentence.split(" ")[:-1])
 
@@ -133,26 +153,29 @@ def get_sentences(_path,labelpath,corpuspath,maptype=True):
                 if flag_focus == 1:
                     if "expr" in filename:
                         focus_index = focus_index + int(len(list_tokens)/2)
-                        flag_focus = 2 
+                        flag_focus = 2
                         slicefile_focus.append(focus_index)
-                    else:             
+                    else:   
                         if focuspointer[0] in list_tokens:
                             focus_index = focus_index + list_tokens.index(focuspointer[0])
-                            flag_focus = 2 
+                            flag_focus = 2  
                             slicefile_focus.append(focus_index)
                         else:  
                             if '*' in focuspointer[0]:
                                 if focuspointer[0] in list_tokens:
                                     focus_index = focus_index + list_tokens.index(focuspointer[0].replace('*',''))
-                                    flag_focus = 2 
+                                    flag_focus = 2
                                     slicefile_focus.append(focus_index)
-                                else:                                   
+                                else:                                 
+                                    #print("Warning:"+filename+"-"+sliceid+" focus pointer is wrong,please check it and decide del it or not.")
                                     flag_focus = 0
-                            else:
+                            else:                            
+                                #print("Warning:"+filename+"-"+sliceid+" focus pointer is wrong,please check it and decide del it or not.")
                                 flag_focus = 0
                 if flag_focus == 0:
                     focus_index = focus_index + len(list_tokens)
       
+
                 if maptype:
                     slice_corpus.append(list_tokens)
                 else:
@@ -161,7 +184,7 @@ def get_sentences(_path,labelpath,corpuspath,maptype=True):
             if flag_focus == 0:
                 continue
 
-            slicefile_labels.append(label)
+            slicefile_labels.append(labellists[int(sliceid)])
             slicefile_filenames.append(file_name)
 
             if maptype:
@@ -178,28 +201,83 @@ def get_sentences(_path,labelpath,corpuspath,maptype=True):
             else:
                 slicefile_corpus.append(slice_corpus)
 
+        #print(lastprogram_id)
         folder_path = os.path.join(corpuspath, str(lastprogram_id))
         savefilename = folder_path + '/' + filename[:-4] + '.pkl'
-        if lastprogram_id not in os.listdir(corpuspath): 
+        if lastprogram_id not in os.listdir(corpuspath):   
             os.mkdir(folder_path)
-        if savefilename not in os.listdir(folder_path):
-            f1 = open(savefilename, 'wb')
+        if savefilename not in os.listdir(folder_path):   
+            f1 = open(savefilename, 'wb')                  
             pickle.dump([slicefile_corpus,slicefile_labels,slicefile_focus,slicefile_func,slicefile_filenames], f1)
         else:
-            f1 = open(savefilename, 'rb')
-            data = cPickle.load(f1)
+            f1 = open(savefilename, 'rb')                
+            data = pickle.load(f1)
             f1.close()
-            f1 = open(savefilename, 'wb') 
+            f1 = open(savefilename, 'wb')                  
             pickle.dump([slicefile_corpus+data[0],slicefile_labels+data[1],slicefile_focus+data[2],slicefile_func+data[3],slicefile_filenames+data[4]], f1)
         f1.close()
 
+
+'''
+dedouble function
+-----------------------------
+This function is used to get the slice id that need to delete because of double
+
+# Arguments
+    filename: String type, the name of file
+    mode: String type, "cdg+ddg" or "ddg"
+
+# Return
+    list_delete
+    
+'''
+
+def dedouble(filename, mode):
+    fileclass = [{'api':['api_slice_C1_1','api_slice_C1_2','api_slice_C2_1','api_slice_C2_2','api_slice_C2_3','api_slice_C++_1','api_slice_C++_2'],
+                'array':['array_slice_C1_1','array_slice_C1_2','array_slice_C2_1','array_slice_C2_2','array_slice_C2_3','array_slice_C++_1','array_slice_C++_2'],
+                'expr':['expr_slice_C1_1','expr_slice_C1_2','expr_slice_C2','expr_slice_C++'],
+                'pointer':['pointer_slice_C1_1','pointer_slice_C1_2','pointer_slice_C2_1','pointer_slice_C2_2','pointer_slice_C2_3','pointer_slice_C++_1','pointer_slice_C++_2']},
+
+                {'api':['api_slice_C1_1','api_slice_C1_2','api_slice_C2_1','api_slice_C2_2','api_slice_C2_3','api_slice_C++_1','api_slice_C++_2'],
+                'array':['array_slice_C1_1','array_slice_C1_2','array_slice_C2_1','array_slice_C2_2','array_slice_C2_3','array_slice_C++_1','array_slice_C++_2'],
+                'expr':['expr_slice_C1_1','expr_slice_C1_2','expr_slice_C2_1','expr_slice_C2_2','expr_slice_C2_3','expr_slice_C++_1','expr_slice_C++_2'],
+                'pointer':['pointer_slice_C1_1','pointer_slice_C1_2','pointer_slice_C2_1','pointer_slice_C2_2','pointer_slice_C2_3','pointer_slice_C++_1','pointer_slice_C++_2']}
+                ]
+    list_delete = []
+
+    if mode == "cdg_ddg":
+        fc = fileclass[0]
+    else:
+        fc = fileclass[1]
+
+    for key in fc:
+        if key in filename:
+            k = key
+            n = fc[key].index(filename[:-4])
+            f = open("./dedouble/" + mode + "/" + key + "_delete.pkl",'rb') 
+            deleteitems = cPickle.load(f)
+            f.close()
+            break
+
+    for item in deleteitems:
+        if item.startswith(k + "_hash" + str(n+1) + "$"):   
+            list_delete.append(item.split("$")[1])
+
+    return list_delete
+
+
+
 if __name__ == '__main__':
+    
+ 
     SLICEPATH = './data/data_source/SARD/'
     LABELPATH = './data/label_source/SARD/'
-    CORPUSPATH = './data/corpus/SARD/'
+    CORPUSPATH = './data/corpus/'
 
     MAPTYPE = True
 
     sentenceDict = get_sentences(SLICEPATH, LABELPATH, CORPUSPATH, MAPTYPE)
-	
+
+    #exit()
     print('success!')
+
