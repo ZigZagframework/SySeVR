@@ -1,6 +1,7 @@
 ## coding: utf-8
 '''
 This python file is used to tranfer the words in corpus to vector, and save the word2vec model under the path 'w2v_model'.
+
 '''
 
 from gensim.models.word2vec import Word2Vec
@@ -11,6 +12,7 @@ import gc
 '''
 DirofCorpus class
 -----------------------------
+
 This class is used to make a generator to produce sentence for word2vec training
 
 # Arguments
@@ -36,6 +38,7 @@ class DirofCorpus(object):
 '''
 generate_w2vmodel function
 -----------------------------
+
 This function is used to learning vectors from corpus, and save the model
 
 # Arguments
@@ -55,9 +58,23 @@ def evaluate_w2vModel(w2vModelPath):
     for sign in ['(', '+', '-', '*', 'main']:
         print(sign, ":")
         print(model.most_similar_cosmul(positive=[sign], topn=10))
+
+def get_timesteps_values(decTokenFlawPath, threShold):
+    f1 = open(decTokenFlawPath, 'rb')
+    sentences = pickle.load(f1)
+    f1.close()
+
+    list_length = sorted([len(sentence) for sentence in sentences])
+    len_list = len(list_length)
+
+    index = int(len_list * threShold)
+    print(index)
+    print(list_length[index])
     
+
 def main():
     dec_tokenFlaw_path = ['./data/cdg_ddg/corpus/']
+    #dec_tokenFlaw_path = ['./data/cdg_ddg/corpus/','./data/ddg/corpus/']
     w2v_model_path = "./w2v_model/wordmodel3" 
     generate_w2vModel(dec_tokenFlaw_path, w2v_model_path)
     evaluate_w2vModel(w2v_model_path)
